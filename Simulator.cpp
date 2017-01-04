@@ -36,23 +36,19 @@ void Simulator::run(double Tmin, double Tmax, double epsilon, std::string filena
 	//Initialized variables to memorize best values
     double T = Tmin;
     double TmaxPerf,TminSd;
-    double TmaxPerfLP,TminSdLP;
     double maxPerf = -1, minSd = -1;
-    double maxPerfLP = -1, minSdLP = -1;
-    double SdmaxPerf = -1, SdmaxPerfLP = -1;
+    double SdmaxPerf = -1;
     std::chrono::microseconds total_duration(0);
-    std::chrono::microseconds total_duration_PRINT(0);
-    std::chrono::microseconds total_duration_GETZERO(0);
     std::chrono::microseconds total_duration_IIS(0);
     while (T <= Tmax)
     {
         std::chrono::high_resolution_clock::time_point t1;
         std::chrono::high_resolution_clock::time_point t2;
-        DEBUG("T = " << std::setprecision(10) << T) //console display
+        //DEBUG("T = " << std::setprecision(10) << T) //console display
         file << "T = " << T << "\n";
         pattern.clear(T); //initialize the pattern
         t1 = std::chrono::high_resolution_clock::now();
-        heuristic(pattern,machine,model,param); //run the insertion heuristic
+        heuristic(pattern,machine,model,epsilon); //run the insertion heuristic
         t2 = std::chrono::high_resolution_clock::now();
         total_duration_IIS += std::chrono::duration_cast<std::chrono::microseconds>(t2-t1);
         //print_pattern();
@@ -74,68 +70,6 @@ void Simulator::run(double Tmin, double Tmax, double epsilon, std::string filena
             double yield = pattern.getNbInstances(k)*pattern.getWork(k)/pattern.getPeriod();
            file << "\tApp " << k << " has " << pattern.getNbInstances(k) << " instances, for a yield of " << yield << ".\n";
         }
-        std::vector<std::vector<int> > priority;
-        if (lpOpt)
-        {
-            priority = pattern.init_cplex();
-            ///CREATE THE FIRST LINEAR PROGRAM
-            t1 = std::chrono::high_resolution_clock::now();
-            print_pattern_cplex("temp1.lp",priority);
-            t2 = std::chrono::high_resolution_clock::now();
-            total_duration_PRINT += std::chrono::duration_cast<std::chrono::microseconds>(t2-t1);
-            ///SOLVE IT
-            t1 = std::chrono::high_resolution_clock::now();
-            system(std::string("cplex -c \"r temp1.lp\" \"opt\" \"display solution variables -\" > cplex_log1").c_str());
-            t2 = std::chrono::high_resolution_clock::now();
-            total_duration += std::chrono::duration_cast<std::chrono::microseconds>(t2-t1);
-        }
-        ///THEN WITH ONE LP WE CREATE THE NEXT ONE
-        double minOptPeriod = pattern.getPeriod();
-        if (lpOpt)
-        {
-            minOptPeriod = std::min(minOptPeriod,readPeriod("cplex_log1"));
-            std::cout << "Topt = " << readPeriod("cplex_log1") << "\n";
-            for (int loop=1; loop<=NB_LP; loop++)
-            {
-                std::ostringstream stm,stm1;
-                stm << loop;
-                stm1 << loop+1;
-                std::cout << loop << "\n";
-                ///We get the intervals to switch
-                t1 = std::chrono::high_resolution_clock::now();
-                std::vector<std::pair<int,int> > switches = getZeroInt("cplex_log"+stm.str());
-                t2 = std::chrono::high_resolution_clock::now();
-                total_duration_GETZERO += std::chrono::duration_cast<std::chrono::microseconds>(t2-t1);
-                ///we create the new lp based on the first one and the switch
-                t1 = std::chrono::high_resolution_clock::now();
-                print_pattern_cplex("temp"+stm1.str()+".lp",priority,"temp"+stm.str()+".lp",switches);
-                t2 = std::chrono::high_resolution_clock::now();
-                total_duration_PRINT += std::chrono::duration_cast<std::chrono::microseconds>(t2-t1);
-                ///and we execute cplex on it, and save the results
-                t1 = std::chrono::high_resolution_clock::now();
-                system(std::string("cplex -c \"r temp"+stm1.str()+".lp\" \"opt\" \"display solution variables -\" > cplex_log"+stm1.str()).c_str());
-                t2 = std::chrono::high_resolution_clock::now();
-                total_duration += std::chrono::duration_cast<std::chrono::microseconds>(t2-t1);
-                double optPeriod = readPeriod("cplex_log"+stm1.str());
-                std::cout << "Topt = " << optPeriod << "\n";
-                if (optPeriod < minOptPeriod)
-                    minOptPeriod = optPeriod;
-            }
-        }
-        file << "Optimized Period : " << minOptPeriod << "\n";
-        file << "Optimized Performance : " << getPerf()*pattern.getPeriod()/minOptPeriod << "\n";
-        if (getPerf()*pattern.getPeriod()/minOptPeriod > maxPerfLP)
-        {
-            maxPerfLP = getPerf()*pattern.getPeriod()/minOptPeriod;
-            SdmaxPerfLP = getSlowdown()*pattern.getPeriod()/minOptPeriod;
-            TmaxPerfLP = minOptPeriod;
-        }
-        file << "Optimized Slowdown : " << minOptPeriod/getSlowdown()/pattern.getPeriod() << "\n";
-        if (getSlowdown()*pattern.getPeriod()/minOptPeriod > minSdLP)
-        {
-            minSdLP = getSlowdown()*pattern.getPeriod()/minOptPeriod;
-            TminSdLP = minOptPeriod;
-        }
         T = round(T*(1+epsilon)*1000)/1000.;
     }
     T = TmaxPerf;
@@ -144,11 +78,11 @@ void Simulator::run(double Tmin, double Tmax, double epsilon, std::string filena
     {
         std::chrono::high_resolution_clock::time_point t1;
         std::chrono::high_resolution_clock::time_point t2;
-        DEBUG("T = " << std::setprecision(10) << T) //console display
+        //DEBUG("T = " << std::setprecision(10) << T) //console display
         file << "T = " << T << "\n";
         pattern.clear(T); //initialize the pattern
         t1 = std::chrono::high_resolution_clock::now();
-        heuristic(pattern,machine,model,param); //run the insertion heuristic
+        heuristic(pattern,machine,model,epsilon); //run the insertion heuristic
         t2 = std::chrono::high_resolution_clock::now();
         total_duration_IIS += std::chrono::duration_cast<std::chrono::microseconds>(t2-t1);
         //print_pattern();
@@ -160,68 +94,6 @@ void Simulator::run(double Tmin, double Tmax, double epsilon, std::string filena
            file << "\tApp " << k << " has " << pattern.getNbInstances(k) << " instances, for a yield of " << yield << ".\n";
         }
         ///THEN WITH ONE LP WE CREATE THE NEXT ONE
-        std::vector<std::vector<int> > priority;
-        if (lpOpt)
-        {
-            priority = pattern.init_cplex();
-            ///CREATE THE FIRST LINEAR PROGRAM
-            t1 = std::chrono::high_resolution_clock::now();
-            print_pattern_cplex("temp1.lp",priority);
-            t2 = std::chrono::high_resolution_clock::now();
-            total_duration_PRINT += std::chrono::duration_cast<std::chrono::microseconds>(t2-t1);
-            ///SOLVE IT
-            t1 = std::chrono::high_resolution_clock::now();
-            system(std::string("cplex -c \"r temp1.lp\" \"opt\" \"display solution variables -\" > cplex_log1").c_str());
-            t2 = std::chrono::high_resolution_clock::now();
-            total_duration += std::chrono::duration_cast<std::chrono::microseconds>(t2-t1);
-        }
-        ///THEN WITH ONE LP WE CREATE THE NEXT ONE
-        double minOptPeriod = pattern.getPeriod();
-        if (lpOpt)
-        {
-            minOptPeriod = std::min(minOptPeriod,readPeriod("cplex_log1"));
-            std::cout << "Topt = " << readPeriod("cplex_log1") << "\n";
-            for (int loop=1; loop<=NB_LP; loop++)
-            {
-                std::ostringstream stm,stm1;
-                stm << loop;
-                stm1 << loop+1;
-                std::cout << loop << "\n";
-                ///We get the intervals to switch
-                t1 = std::chrono::high_resolution_clock::now();
-                std::vector<std::pair<int,int> > switches = getZeroInt("cplex_log"+stm.str());
-                t2 = std::chrono::high_resolution_clock::now();
-                total_duration_GETZERO += std::chrono::duration_cast<std::chrono::microseconds>(t2-t1);
-                ///we create the new lp based on the first one and the switch
-                t1 = std::chrono::high_resolution_clock::now();
-                print_pattern_cplex("temp"+stm1.str()+".lp",priority,"temp"+stm.str()+".lp",switches);
-                t2 = std::chrono::high_resolution_clock::now();
-                total_duration_PRINT += std::chrono::duration_cast<std::chrono::microseconds>(t2-t1);
-                ///and we execute cplex on it, and save the results
-                t1 = std::chrono::high_resolution_clock::now();
-                system(std::string("cplex -c \"r temp"+stm1.str()+".lp\" \"opt\" \"display solution variables -\" > cplex_log"+stm1.str()).c_str());
-                t2 = std::chrono::high_resolution_clock::now();
-                total_duration += std::chrono::duration_cast<std::chrono::microseconds>(t2-t1);
-                double optPeriod = readPeriod("cplex_log"+stm1.str());
-                std::cout << "Topt = " << optPeriod << "\n";
-                if (optPeriod < minOptPeriod)
-                    minOptPeriod = optPeriod;
-            }
-        }
-        file << "Optimized Period : " << minOptPeriod << "\n";
-        file << "Optimized Performance : " << getPerf()*pattern.getPeriod()/minOptPeriod << "\n";
-        if (getPerf()*pattern.getPeriod()/minOptPeriod > maxPerfLP)
-        {
-            maxPerfLP = getPerf()*pattern.getPeriod()/minOptPeriod;
-            SdmaxPerfLP = getSlowdown()*pattern.getPeriod()/minOptPeriod;
-            TmaxPerfLP = minOptPeriod;
-        }
-        file << "Optimized Slowdown : " << minOptPeriod/getSlowdown()/pattern.getPeriod() << "\n";
-        if (getSlowdown()*pattern.getPeriod()/minOptPeriod > minSdLP)
-        {
-            minSdLP = getSlowdown()*pattern.getPeriod()/minOptPeriod;
-            TminSdLP = minOptPeriod;
-        }
         if (getPerf() > maxPerf*TmaxPerf/T - PRECISION && getPerf() < maxPerf*TmaxPerf/T + PRECISION)
         {
             minReducedPeriod = T;
@@ -233,33 +105,18 @@ void Simulator::run(double Tmin, double Tmax, double epsilon, std::string filena
     file << "------------------------\n";
     file << "Max Performance of " << maxPerf << " for T = " << TmaxPerf << "\n";
     file << "Min Slowdown of " << 1/minSd << " for T = " << TminSd << "\n";
-    if (lpOpt)
-    {
-        file << "Max Optimized Performance of " << maxPerfLP << " for Topt = " << TmaxPerfLP << "\n";
-        file << "Min Optimized Slowdown of " << 1/minSdLP << " for Topt = " << TminSdLP << "\n";
-    } else {
-        file << "Max Reduced Performance of " << maxPerf*TmaxPerf/minReducedPeriod << " with dilation of " << 1/(SdmaxPerf*TmaxPerf/minReducedPeriod) << ", for T = " << minReducedPeriod << "\n";
-        result_dilation = 1/(SdmaxPerf*TmaxPerf/minReducedPeriod);
-        result_performance = maxPerf*TmaxPerf/minReducedPeriod;
-        result_period = minReducedPeriod;
-    }
+    file << "Max Reduced Performance of " << maxPerf*TmaxPerf/minReducedPeriod << " with dilation of " << 1/(SdmaxPerf*TmaxPerf/minReducedPeriod) << ", for T = " << minReducedPeriod << "\n";
+    result_dilation = 1/(SdmaxPerf*TmaxPerf/minReducedPeriod);
+    result_performance = maxPerf*TmaxPerf/minReducedPeriod;
+    result_period = minReducedPeriod;
     file.close();
-    if (lpOpt)
-    {
-        system("rm *.lp");
-        system("rm cplex*");
-    }
-    std::cout << "Insert-In-Schedule time : " << total_duration_IIS.count() << " us.\n";
-    std::cout << "Creating next LP time : " << total_duration_PRINT.count()+total_duration_GETZERO.count() << " us.\n";
-    std::cout << "Solving time : " << total_duration.count() << " us.\n";
-    std::cout << "Total time : " << total_duration.count()+total_duration_PRINT.count()+total_duration_GETZERO.count()+total_duration_IIS.count() << " us.\n";
+    std::cout << "Total time : " << total_duration_IIS.count() << " us.\n";
 }
 
-void Simulator::setHeuristic(std::string heur,double p)
+void Simulator::setHeuristic(std::string heur)
 {
     if (heur == "insert")
         heuristic = insertInSchedule;
-    param = p; //USELESS
 }
 
 void Simulator::setModel(std::string mod)
@@ -316,8 +173,7 @@ std::vector<Interval> splitSchedulable(Pattern& pat, const Machine& m, int k, st
             pat.addDate(dateBeginIo);//we need to split the interval
             auto itBegin = pat.getDates().find(dateElement(dateBeginIo));
             auto itEnd = pat.getDates().find(dateElement(dateEndIo));
-			///Compute the bandwidths available
-            ///ALREADY DONE NOW AHAHAH
+            ///Compute the bandwidths available
             int nbIntervals = (std::distance(itBegin,pat.getDates().end())+std::distance(pat.getDates().begin(),itEnd))%pat.getDates().size();
             IOintList = std::vector<Interval>(nbIntervals);
             double dataLeft = pat.getIOVol(k);
@@ -327,7 +183,7 @@ std::vector<Interval> splitSchedulable(Pattern& pat, const Machine& m, int k, st
             int prevI = -1;
             while (dataLeft > 0+PRECISION && cpt<nbIntervals)
             {
-				///We select the interval with max bandwidth available
+                ///We select the interval with max bandwidth available
                 double currentMax = 0;
                 int currentI = 0;
                 int iMax = 0;
