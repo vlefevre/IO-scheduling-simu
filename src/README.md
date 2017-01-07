@@ -40,3 +40,4 @@ The application displays in the console the time spent in creating all the sched
 The application also creates two files, one of the name you chose in the command-line (by default "results.txt") and one file "temp.txt".
 The first file contains one line for each set of applications with on it: the number of the set, then the best system efficiency, then the corresponding dilation and finally the corresponding period.
 The second file can be used to have more information on what the algorithm did during the last set. You can see every period tried, the system efficiency and dilation as long as the number of instances of each application in the period.
+The file "results_paper.txt" contains our results on the 110 sets.

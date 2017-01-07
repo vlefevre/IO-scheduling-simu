@@ -8,5 +8,3 @@ _Periodic I/O scheduling for super-computers_ by Aupy, Gainaru and Le Fèvre.
   
   * In analysis/ one can find all necessary data to analyze and reproduce the
   figures of the paper.
-  
-  
