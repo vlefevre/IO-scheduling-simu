@@ -93,7 +93,7 @@ void Simulator::run(double Tmin, double Tmax, double epsilon, std::string filena
             double yield = pattern.getNbInstances(k)*pattern.getWork(k)/pattern.getPeriod();
            file << "\tApp " << k << " has " << pattern.getNbInstances(k) << " instances, for a yield of " << yield << ".\n";
         }
-        ///THEN WITH ONE LP WE CREATE THE NEXT ONE
+        //This, in practice, checks if the number of instances changes in the pattern
         if (getPerf() > maxPerf*TmaxPerf/T - PRECISION && getPerf() < maxPerf*TmaxPerf/T + PRECISION)
         {
             minReducedPeriod = T;
