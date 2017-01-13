@@ -7,22 +7,32 @@ library(grid)
 library(plyr)
 ###################### END R STUFF ##########################
 
+#########################
+## Parameters that can be modified for the plot.
+#########################
+
+
+## We plot between n_kp_min and n_kp
+n_kp_min =1 
+n_kp =15 
+
+n_expes = 10 #number of expes
+
+img="evol_k'.pdf" #location where image is saved
 
 #########################
 ## Plotting impact of k'
 #########################
 
-n_kp =20 #size of k'
-n_expes = 10 #number of expes
 
 #N_XX is for XX normalized with respect to the best one attainable (when K' is maximum).
 DF <- data.frame(Kprime=rep(NA,0),id=rep(NA,0),N_SysEff=rep(NA, 0),N_Dilation=rep(NA, 0),stringsAsFactors=FALSE)
 
 for (j in 1:n_expes) {
-	x <-paste("results_kp_",n_kp,"/simu_all_set",j,sep = "")
+	x <-paste("study_kp/simu_all_set",j,sep = "")
 	dat = read.table(x, header = TRUE)
 	#We compute K'. To do this we take only three significant numbers (otherwise there are roundup errors, even with this, but we filter them later).
-	setDT(dat)[ , Kprime := signif(Period/Period[1],3)]
+	setDT(dat)[]
 
 	#Next step is to compute the max as a function of Kprime
 	df <- data.frame(
@@ -77,25 +87,17 @@ tgc_D <- ddply(dat_D, c("Kprime"), summarise,
 )
 
 # We now filter roundup errors: we only take the elements when we have all expe values (n_expes)
-tgc_S_Filtered=subset(tgc_S, N==n_expes)
-tgc_D_Filtered=subset(tgc_D, N==n_expes)
+tgc_S_Filtered=subset(tgc_S, (N==n_expes & Kprime <n_kp & Kprime >= n_kp_min))
+tgc_D_Filtered=subset(tgc_D, (N==n_expes & Kprime <n_kp & Kprime >= n_kp_min))
 
 
 
 
 ###NOW WE PLOT !!
-## geom_errorbar allows to see the bars, one can check, but they make the thing unreadable :).
-
-
-#dat_S_box=subset(dat_S, Kprime>2)
-#ggplot(dat_S_box, aes(Kprime, N_SysEff)) +
-#  geom_boxplot(aes(group =Kprime))
-
-
 
 pSysEff = ggplot(data=tgc_S_Filtered, aes(x=Kprime,y=mean))+
     geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1,colour="grey30",alpha=0.3) +#theme_bw()+
-	xlab("")+scale_x_continuous(breaks=1:n_kp)+
+	xlab("")+scale_x_continuous(breaks=n_kp_min:n_kp)+
 	ylab("Normalized SysEff")+
 	geom_line(size=1, colour="#000099")+ geom_point(colour="#000099")
 
@@ -104,52 +106,15 @@ pSysEff = ggplot(data=tgc_S_Filtered, aes(x=Kprime,y=mean))+
 
 pDil = ggplot(data=tgc_D_Filtered, aes(x=Kprime,y=mean))+
     geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1,colour="grey30",alpha=0.3) +#theme_bw()+
-	xlab("K' = Tmax / Tmin")+scale_x_continuous(breaks=1:n_kp)+
+	xlab("K' = Tmax / Tmin")+scale_x_continuous(breaks=n_kp_min:n_kp)+
 	ylab("Normalized Dilation")+
 	geom_line(size=1, colour="#FF9999")+ geom_point(colour="#FF9999")
 
 
 #This is to print both figures as one, sharing xlab. 
 #To print individually, remove all commented text above.
-cairo_pdf(file ="../fig/evol_k'.pdf", width=6, height=7)
+cairo_pdf(file =img, width=6, height=7)
 pushViewport(viewport(layout = grid.layout(2, 1)))
 print(pSysEff, vp = viewport(layout.pos.row = 1, layout.pos.col = 1))
 print(pDil, vp = viewport(layout.pos.row = 2, layout.pos.col = 1))
 dev.off()
-
-
-######################################
-######### BELOW ARE FIRST TRIES.
-######################################
-
-
-#dat8=read.table("simu_all_set8", header = TRUE)
-##We compute K'.
-#setDT(dat8)[ , Kprime := Period/Period[1]]
-#d <- matrix(nrow=nrow(dat8), ncol=3) 
-#colnames(d)<- c("SysEff","Dilation","Kprime")
-
-#max_Mat <- function(dat,datMax,i) {
-#	if(i == 1) {
-#		c(dat[1,SysEff],dat[1,Dilation],dat[1,Kprime])
-#	} else {
-#		if(dat[i,SysEff] > datMax[i-1,1]) {
-#			c(dat[i,SysEff],dat[i,Dilation],dat[i,Kprime])
-#		} else { 
-#			if(dat[i,SysEff] < datMax[i-1,1]) {
-#				c(datMax[i-1,1],datMax[i-1,2],dat[i,Kprime])
-#			} else {
-#			c(dat[i,SysEff],min(datMax[i-1,2],dat[i,Dilation]),dat[i,Kprime])
-#			}
-#		}
-#	}
-#}
-
-#for (i in 1:nrow(dat8)){
-#	d[i,] <- max_Mat(dat8,d,i)
-#}
-#df=as.data.frame(d)
-#setDT(df)[,id := 8]
-
-
-
