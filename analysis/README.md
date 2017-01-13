@@ -18,9 +18,12 @@ DATA
     	+ Periodic (syseff/dilation_periodic_simu)
     - Upper Limit for system efficiency (syseff_UL)
 
+  * study_kp:
+  results obtained when varying k' from 1 to 20 + k'=100, for epsilon=0.01.
+
   * results_kp_10 (resp. results_kp_20):
-  the results obtained at each iteration of the main loop of Algorithm 2, namely
-  for all values of T (T increases by a factor of 1+epsilon until Tmax), for
+  results obtained at each iteration of the main loop of Algorithm 2, namely for
+  all values of T (T increases by a factor of 1+epsilon until Tmax), for
   epsilon=0.01, and Tmax = 10Tmin (resp. 20Tmin)
 
 
