@@ -97,24 +97,32 @@ tgc_D_Filtered=subset(tgc_D, (N==n_expes & Kprime <n_kp & Kprime >= n_kp_min))
 
 pSysEff = ggplot(data=tgc_S_Filtered, aes(x=Kprime,y=mean))+
     geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1,colour="grey30",alpha=0.3) +#theme_bw()+
-	xlab("")+scale_x_continuous(breaks=n_kp_min:n_kp)+
+	xlab("K' = Tmax / Tmin")+scale_x_continuous(breaks=n_kp_min:n_kp)+
 	ylab("Normalized SysEff")+
-	geom_line(size=1, colour="#000099")+ geom_point(colour="#000099")
+	geom_line(size=1, colour="#000099")+ geom_point(colour="#000099")+ 
+	theme(axis.text=element_text(size=12),
+	axis.title.x = element_text(size=14, face="bold"),
+	axis.title.y = element_text(size=14, face="bold")
+	)
 
 
 
 
 pDil = ggplot(data=tgc_D_Filtered, aes(x=Kprime,y=mean))+
-    geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1,colour="grey30",alpha=0.3) +#theme_bw()+
+    geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1,colour="grey30",alpha=0.3) + theme(legend.text=element_text(size=20))+
 	xlab("K' = Tmax / Tmin")+scale_x_continuous(breaks=n_kp_min:n_kp)+
 	ylab("Normalized Dilation")+
-	geom_line(size=1, colour="#FF9999")+ geom_point(colour="#FF9999")
+	geom_line(size=1, colour="#FF9999")+ geom_point(colour="#FF9999")+ 
+	theme(axis.text=element_text(size=12),
+	axis.title.x = element_text(size=14, face="bold"),
+	axis.title.y = element_text(size=14, face="bold")
+	)
 
 
 #This is to print both figures as one, sharing xlab. 
 #To print individually, remove all commented text above.
-cairo_pdf(file =img, width=6, height=7)
-pushViewport(viewport(layout = grid.layout(2, 1)))
+cairo_pdf(file =img, width=13, height=3)
+pushViewport(viewport(layout = grid.layout(1, 2)))
 print(pSysEff, vp = viewport(layout.pos.row = 1, layout.pos.col = 1))
-print(pDil, vp = viewport(layout.pos.row = 2, layout.pos.col = 1))
+print(pDil, vp = viewport(layout.pos.row = 1, layout.pos.col = 2))
 dev.off()

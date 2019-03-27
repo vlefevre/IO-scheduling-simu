@@ -41,10 +41,12 @@ pl_cong+
 	scale_colour_manual(name="",values=SE_colors,breaks=SE_ori_names,labels=SE_legends)+ 
 	scale_linetype_manual(name="",values=SE_lines,breaks=SE_ori_names,labels=SE_legends)+ 
 #legend inside plotting area
-	theme(legend.justification=c(1,0), legend.position=c(1,0))
+	theme(legend.justification=c(1,0), legend.position=c(1,0),axis.text=element_text(size=18),
+	axis.title.x = element_text(size=20),
+	axis.title.y = element_text(size=20),legend.text=element_text(size=20))
                          
 
-ggsave("../fig/perf_comparison.pdf", width=8, height=5,device=cairo_pdf)
+ggsave("perf_comparison.pdf", width=8, height=5,device=cairo_pdf)
 
 #########################
 ## NOW FOR DILATION
@@ -77,7 +79,9 @@ pl_dil+
 	scale_colour_manual(name="",values=DIL_colors,breaks=DIL_ori_names,labels=DIL_legends)+ 
 	scale_linetype_manual(name="",values=DIL_lines,breaks=DIL_ori_names,labels=DIL_legends)+ 
 #legend inside plotting area
-	theme(legend.justification=c(1,1), legend.position=c(1,1))
+	theme(legend.justification=c(1,1), legend.position=c(1,1),axis.text=element_text(size=18),
+	axis.title.x = element_text(size=20),
+	axis.title.y = element_text(size=20),legend.text=element_text(size=20))
                          
-ggsave("../fig/dilation_comparison.pdf", width=8, height=5,device=cairo_pdf)
+ggsave("dilation_comparison.pdf", width=8, height=5,device=cairo_pdf)
 
